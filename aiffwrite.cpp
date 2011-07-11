@@ -9,7 +9,7 @@
 
 int main( int argc, char **argv )
 {
-  Analysis *scmanal = new Analysis( 1, 1, 1, "OUTPUT", argc, argv );
+  Analysis *scmanal = new Analysis( 1, 1, 1, "AIFF_OUTPUT", argc, argv );
   char *output_aiff_filename = argv[ 2 ];
 
   assert( scmanal->get_type( 0 ) == TIME_DOMAIN );
@@ -31,10 +31,12 @@ int main( int argc, char **argv )
   
   double *file_samples = scmanal->get_file( 0 );
 
-  for ( uint i = 0; i < aiff_info.frames; i++ ) {
+  uint length = scmanal->get_length( 0 );
+
+  for ( uint i = 0; i < length; i++ ) {
     int samples[ 2 ];
 
-    samples[ 0 ] = samples[ 1 ] = file_samples[ i ];
+    samples[ 0 ] = samples[ 1 ] = 256.0 * file_samples[ i ];
 
     assert( sf_writef_int( aiff, samples, 1 ) == 1 );
   }
