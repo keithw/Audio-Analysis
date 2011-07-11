@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "scmanal.h"
 
 // arguments: input_filename output_filename
@@ -18,7 +19,7 @@ int main( int argc, char **argv )
 
   memset( comment, 0, 256 );
 
-  if ( scanf( "# %d %d %le %le %le %le ", (int *)&type, &length, &begin, &end,
+  if ( scanf( "# %d %ld %le %le %le %le ", (int *)&type, (long *)&length, &begin, &end,
 	      &compl_begin, &compl_end ) != 6 ) {
     fprintf( stderr, "%s: scanf read wrong number of metadata items\n",
 	     argv[ 0 ] );

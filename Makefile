@@ -6,7 +6,7 @@ executables = ascii2floats floats2ascii fft ifft add multiply divide scale \
 
 CPP = g++
 INCLUDES = -I/usr/real-local/include
-CPPFLAGS = -O2 -g -Wall -pipe
+CPPFLAGS = -O2 -g -Wall -pipe -pedantic -Werror -Wextra -std=c++0x
 LIBS = -lrfftw -lfftw -lm
 
 all: $(executables)

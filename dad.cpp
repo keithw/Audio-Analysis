@@ -5,7 +5,14 @@
 #include <fcntl.h>
 #include <math.h>
 #include <sys/poll.h>
-#include "/opt/oss/soundcard.h"
+#include <sys/soundcard.h>
+
+int main( void )
+{
+  return 0;
+}
+
+#if 0
 
 #include "scmanal.h"
 
@@ -314,3 +321,5 @@ int main( int argc, char *argv[] )
   delete scmanal;
   return 0;
 }
+
+#endif

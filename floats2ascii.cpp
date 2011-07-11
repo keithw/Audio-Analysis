@@ -16,7 +16,7 @@ int main( int argc, char **argv )
   double compl_end = scmanal->get_compl_end( 0 );
   const char *comment = scmanal->get_comment( 0 );
 
-  printf( "# %d %d %e %e %e %e %s\n", type, length, begin, end,
+  printf( "# %d %ld %e %e %e %e %s\n", type, (long)length, begin, end,
 	  compl_begin, compl_end, comment );
 
   for ( uint i = 0; i < length; i++ ) {

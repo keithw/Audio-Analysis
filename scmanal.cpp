@@ -5,11 +5,12 @@
 #include <stdio.h>
 #include <sys/mman.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "scmanal.h"
 
 Analysis::Analysis( uint my_num_files, uint my_num_inputs, uint my_num_extra,
-		    char *extra_usage, int argc, char **argv )
+		    const char *extra_usage, int argc, char **argv )
 {
   struct stat my_stat;
 
@@ -33,9 +34,9 @@ Analysis::Analysis( uint my_num_files, uint my_num_inputs, uint my_num_extra,
   calling_program = argv[ 0 ];
 
   // Allocate memory
-  file = new (double *)[ num_files ];
+  file = new double *[ num_files ];
   fd = new int[ num_files ];
-  filename = new (char *)[ num_files ];
+  filename = new char *[ num_files ];
   length = new size_t[ num_files ];
   metadata = new metadata_struct[ num_files ];
 

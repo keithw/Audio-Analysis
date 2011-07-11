@@ -16,10 +16,11 @@ int main( int argc, char **argv )
   double *input = scmanal->get_file( 0 );
 
   if ( scmanal->get_type( 0 ) == FFT_DOMAIN ) {
-    uint start_index = (uint) ((min - begin) * (length / 2) / (end - begin));
+    int64_t start_index_tmp = (uint) ((min - begin) * (length / 2) / (end - begin));
+    uint start_index = start_index_tmp;
     uint end_index = (uint) ((max - begin) * (length / 2) / (end - begin));
 
-    if ( start_index < 0 ) {
+    if ( start_index_tmp < 0 ) {
       start_index = 0;
     }
 
@@ -39,10 +40,11 @@ int main( int argc, char **argv )
       }
     }
   } else {
-    uint start_index = (uint) ((min - begin) * length / (end - begin));
+    int64_t start_index_tmp = (uint) ((min - begin) * length / (end - begin));
+    uint start_index = start_index_tmp;
     uint end_index = (uint) ((max - begin) * length / (end - begin));
 
-    if ( start_index < 0 ) {
+    if ( start_index_tmp < 0 ) {
       start_index = 0;
     }
 

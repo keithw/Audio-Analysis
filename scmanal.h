@@ -36,7 +36,7 @@ class Analysis {
 
  public:
   Analysis( uint my_num_files, uint my_num_inputs, uint my_num_extra,
-	    char *extra_usage, int argc, char **argv );
+	    const char *extra_usage, int argc, char **argv );
   void make_outputs( size_t output_length );
   ~Analysis();
 
