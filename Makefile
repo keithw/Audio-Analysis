@@ -1,10 +1,10 @@
 source = ascii2floats.cpp floats2ascii.cpp fft.cpp ifft.cpp scmanal.cpp \
 	add.cpp multiply.cpp divide.cpp scale.cpp gpout.cpp dad.cpp \
 	sinegen.cpp noisegen.cpp hanning.cpp normalize.cpp threshold.cpp spectro.cpp \
-	aiffread.cpp
+	aiffread.cpp aiffwrite.cpp
 executables = ascii2floats floats2ascii fft ifft add multiply divide scale \
 	gpout dad sinegen noisegen hanning normalize threshold spectro \
-	aiffread
+	aiffread aiffwrite
 
 CPP = g++
 INCLUDES =
@@ -81,7 +81,9 @@ aiffread: aiffread.cpp scmanal.o
 	$(CPP) $(INCLUDES) $(CPPFLAGS) $(LIBS) \
 	-o $@ scmanal.o aiffread.cpp
 
-
+aiffwrite: aiffwrite.cpp scmanal.o
+	$(CPP) $(INCLUDES) $(CPPFLAGS) $(LIBS) \
+	-o $@ scmanal.o aiffwrite.cpp
 
 include depend
 
