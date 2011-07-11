@@ -56,6 +56,12 @@ int main( int argc, char **argv )
     int samples[ 2 ];
     assert( sf_readf_int( aiff, samples, 1 ) == 1 );
 
+    assert( (samples[ 0 ] & 0xff) == 0 );
+    assert( (samples[ 1 ] & 0xff) == 0 );
+
+    samples[ 0 ] >>= 8;
+    samples[ 1 ] >>= 8;
+
     left_output[ i ] = (double)samples[ 0 ];
     right_output[ i ] = (double)samples[ 1 ];
   }
