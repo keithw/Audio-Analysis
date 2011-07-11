@@ -1,13 +1,15 @@
 source = ascii2floats.cpp floats2ascii.cpp fft.cpp ifft.cpp scmanal.cpp \
 	add.cpp multiply.cpp divide.cpp scale.cpp gpout.cpp dad.cpp \
-	sinegen.cpp noisegen.cpp hanning.cpp normalize.cpp threshold.cpp spectro.cpp
+	sinegen.cpp noisegen.cpp hanning.cpp normalize.cpp threshold.cpp spectro.cpp \
+	aiffread.cpp
 executables = ascii2floats floats2ascii fft ifft add multiply divide scale \
-	gpout dad sinegen noisegen hanning normalize threshold spectro
+	gpout dad sinegen noisegen hanning normalize threshold spectro \
+	aiffread
 
 CPP = g++
-INCLUDES = -I/usr/real-local/include
+INCLUDES =
 CPPFLAGS = -O2 -g -Wall -pipe -pedantic -Werror -Wextra -std=c++0x
-LIBS = -lrfftw -lfftw -lm
+LIBS = -lrfftw -lfftw -lm -lsndfile
 
 all: $(executables)
 
@@ -74,6 +76,10 @@ ifft: ifft.cpp scmanal.o
 dad: dad.cpp scmanal.o
 	$(CPP) $(INCLUDES) $(CPPFLAGS) $(LIBS) \
 	-o $@ scmanal.o dad.cpp
+
+aiffread: aiffread.cpp scmanal.o
+	$(CPP) $(INCLUDES) $(CPPFLAGS) $(LIBS) \
+	-o $@ scmanal.o aiffread.cpp
 
 
 

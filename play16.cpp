@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include <math.h>
 #include <string.h>
-#include "/opt/oss/soundcard.h"
+#include <sys/soundcard.h>
 
 #define OUTPUT_DEVICE "/dev/dsp8"
 const int FORMAT = AFMT_S32_LE;
