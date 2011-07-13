@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <sndfile.h>
+#include <math.h>
 
 #include "scmanal.h"
 
@@ -35,6 +36,10 @@ int main( int argc, char **argv )
 
   for ( uint i = 0; i < length; i++ ) {
     int samples[ 2 ];
+
+    if ( fabs( file_samples[ i ] ) >= 1<<23 ) {
+      fprintf( stderr, "Warning: Possible overflow at sample %d\n", i );
+    }
 
     samples[ 0 ] = samples[ 1 ] = 256.0 * file_samples[ i ];
 
