@@ -1,0 +1,94 @@
+#!/usr/bin/perl -w
+
+use strict;
+use Sys::Mmap;
+
+# Parse arguments
+if ( scalar @ARGV != 3 ) {
+  print STDERR "Usage: $0 ISO_FILENAME TRACK_NUMBER AIFF_FILENAME\n";
+  exit 1;
+}
+
+my ( $iso, $tracknum, $aiff ) = @ARGV;
+die "$0: Invalid track number $tracknum\n"
+  unless ( $tracknum =~ m{^[0-9]+$} ) and ( $tracknum > 0 and $tracknum <= 99 );
+
+# Parse ISO image
+my @tracks = &parse_iso( $iso );
+
+print STDERR "Details of CD24 filesystem $iso:\n";
+for ( @tracks ) {
+  print "   Track #$_->{ number } has offset $_->{ offset }, length $_->{ length } and name {$_->{ name }}\n";
+}
+
+die "$0: Track number $tracknum too big\n" unless ( $tracknum <= scalar @tracks );
+
+my $track = $tracks[ $tracknum - 1 ];
+
+print STDERR "\nReplacing $iso track #$track->{ number } ($track->{ name }) with $aiff...\n\n";
+
+# Check length of on-disk file
+my $aiff_length = (stat $aiff)[ 7 ] or die "$aiff: $!";
+my $track_length = 2048 * $track->{ length };
+my $difference = $aiff_length - $track_length;
+if ( $difference != 0 ) {
+  my $word = ($difference > 0) ? "long" : "short";
+  my $abs = abs $difference;
+  print STDERR "Warning: AIFF file $aiff is $abs bytes too $word to replace track $track->{ number }.\n";
+}
+
+# Memory-map ISO and AIFF
+open ISO, '+<', $iso or die "$iso: $!";
+open AIFF, $aiff or die "$aiff: $!";
+
+my ( $iso_contents, $aiff_contents );
+
+mmap( $iso_contents, 0, PROT_WRITE, MAP_SHARED, ISO ) or die "$iso: $!";
+mmap( $aiff_contents, 0, PROT_READ, MAP_SHARED, AIFF ) or die "$aiff: $!";
+
+my $splice_length = ($aiff_length < $track_length) ? $aiff_length : $track_length;
+
+substr $iso_contents, 2048 * $track->{ offset }, $splice_length, (substr $aiff_contents, 0, $splice_length);
+
+close AIFF or die;
+close ISO or die;
+
+###################
+
+sub parse_iso {
+  # List directory structure of ISO
+  # Conservative checking of filenames -- could break when isoinfo is
+  # upgraded. Using "isoinfo 1.1.9 (Linux)"
+
+  my ( $filename ) = @_;
+
+  open ISOINFO, '-|', 'isoinfo', '-s', '-l', '-i', $filename or die "$!";
+  my @isoinfo = <ISOINFO>;
+  close ISOINFO or die "$!";
+
+  die unless $isoinfo[ 0 ] eq "\n";
+  die unless $isoinfo[ 1 ] eq "Directory listing of /\n";
+
+  my @tracks;
+
+  my $tracknum = 1;
+  for ( 2 .. $#isoinfo ) {
+    chomp $isoinfo[ $_ ];
+    my @fields = split /\s+/, $isoinfo[ $_ ];
+    my ( $offset, $length ) = @fields[ 9, 4 ];
+
+    my ( $trackname ) = substr $isoinfo[ $_ ], 67;
+
+    next if ( $trackname eq ". " or $trackname eq ".. " );
+    die unless ( $trackname =~ m{\.AIF;1 $} );
+
+    my $track = { number => $tracknum++,
+		  offset => $offset,
+		  length => $length,
+		  name => $trackname };
+
+    push @tracks, $track;
+  }
+
+  return @tracks;
+}

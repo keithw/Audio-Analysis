@@ -34,16 +34,22 @@ int main( int argc, char **argv )
 
   uint length = scmanal->get_length( 0 );
 
+  uint overflow_count = 0;
   for ( uint i = 0; i < length; i++ ) {
     int samples[ 2 ];
 
     if ( fabs( file_samples[ i ] ) >= 1<<23 ) {
-      fprintf( stderr, "Warning: Possible overflow at sample %d\n", i );
+      //      fprintf( stderr, "Warning: Possible overflow at sample %d\n", i );
+      overflow_count++;
     }
 
     samples[ 0 ] = samples[ 1 ] = 256.0 * file_samples[ i ];
 
     assert( sf_writef_int( aiff, samples, 1 ) == 1 );
+  }
+
+  if ( overflow_count ) {
+    fprintf( stderr, "Warning: %d possible overflows\n", overflow_count );
   }
 
   delete scmanal;
