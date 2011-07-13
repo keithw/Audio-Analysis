@@ -14,31 +14,41 @@ int main( int argc, char **argv )
 	    scmanal->get_comment( 1 ) );
   scmanal->set_comment( 2, output_comment );
 
-  if ( scmanal->get_length( 0 ) != scmanal->get_length( 1 ) ) {
-    fprintf( stderr, "%s: Input file sizes differ.\n", argv[ 0 ] );
-    exit( 1 );
-  }
-
   if ( scmanal->get_type( 0 ) != scmanal->get_type( 1 ) ) {
     fprintf( stderr, "%s: Input file types differ.\n", argv[ 0 ] );
     exit( 1 );
   }
 
+  if ( scmanal->get_length( 0 ) != scmanal->get_length( 1 ) ) {
+    fprintf( stderr, "%s: Input file sizes differ.\n", argv[ 0 ] );
+    if ( scmanal->get_type( 0 ) != TIME_DOMAIN ) {
+      exit( 1 );
+    }
+  }
+
+  size_t length = MINVAL( scmanal->get_length( 0 ), scmanal->get_length( 1 ) );
+
   if ( (scmanal->get_begin( 0 ) != scmanal->get_begin( 1 ))
-       || (scmanal->get_end( 0 ) != scmanal->get_end( 1 ))
        || (scmanal->get_compl_begin( 0 ) != scmanal->get_compl_begin( 1 ))
        || (scmanal->get_compl_end( 0 ) != scmanal->get_compl_end( 1 ))) {
     fprintf( stderr, "%s: Input file spans differ.\n", argv[ 0 ] );
     exit( 1 );
   }
 
+  if ( ( scmanal->get_end( 0 ) != scmanal->get_end( 1 ) )
+       && ( scmanal->get_type( 0 ) != TIME_DOMAIN ) ) {
+    fprintf( stderr, "%s: Input file ends differ.\n", argv[ 0 ] );
+    exit( 1 );    
+  }
+
+  double min_end = MINVAL( scmanal->get_end( 0 ), scmanal->get_end( 1 ) );
+
   scmanal->set_type( 2, scmanal->get_type( 0 ) );
   scmanal->set_begin( 2, scmanal->get_begin( 0 ) );
-  scmanal->set_end( 2, scmanal->get_end( 0 ) );
+  scmanal->set_end( 2, min_end );
   scmanal->set_compl_begin( 2, scmanal->get_compl_begin( 0 ) );
   scmanal->set_compl_end( 2, scmanal->get_compl_end( 0 ) );
 
-  size_t length = scmanal->get_length( 0 );
   scmanal->make_outputs( length );
   double
     *input_1 = scmanal->get_file( 0 ), 

@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <string.h>
 
+#define MINVAL(x, y) ((x) < (y) ? (x) : (y))
+
 #define SAMPLE_SIZE 8
 #define uint unsigned int
 #define FORMAT_VERSION 1
