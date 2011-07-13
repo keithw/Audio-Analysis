@@ -27,16 +27,6 @@ my $track = $tracks[ $tracknum - 1 ];
 
 print STDERR "\nReplacing $iso track #$track->{ number } ($track->{ name }) with $aiff...\n\n";
 
-# Check length of on-disk file
-my $aiff_length = (stat $aiff)[ 7 ] or die "$aiff: $!";
-my $track_length = 2048 * $track->{ length };
-my $difference = $aiff_length - $track_length;
-if ( $difference != 0 ) {
-  my $word = ($difference > 0) ? "long" : "short";
-  my $abs = abs $difference;
-  print STDERR "Warning: AIFF file $aiff is $abs bytes too $word to replace track $track->{ number }.\n";
-}
-
 # Memory-map ISO and AIFF
 open ISO, '+<', $iso or die "$iso: $!";
 open AIFF, $aiff or die "$aiff: $!";
@@ -46,9 +36,28 @@ my ( $iso_contents, $aiff_contents );
 mmap( $iso_contents, 0, PROT_WRITE, MAP_SHARED, ISO ) or die "$iso: $!";
 mmap( $aiff_contents, 0, PROT_READ, MAP_SHARED, AIFF ) or die "$aiff: $!";
 
-my $splice_length = ($aiff_length < $track_length) ? $aiff_length : $track_length;
+my $cd24_details = parse_aiff( (substr $iso_contents, 2048 * $track->{ offset }, 2048 * $track->{ length }) );
+my $aiff_details = parse_aiff( $aiff_contents );
 
-substr $iso_contents, 2048 * $track->{ offset }, $splice_length, (substr $aiff_contents, 0, $splice_length);
+print "CD24 SSND section starts at $cd24_details->{ ssnd_payload_offset }, goes for $cd24_details->{ ssnd_length }\n";
+print "AIFF section starts at $aiff_details->{ ssnd_payload_offset }, goes for $aiff_details->{ ssnd_length }\n";
+
+# Check length of on-disk file
+my $aiff_payload_len = $aiff_details->{ ssnd_length };
+
+my $track_payload_len = $cd24_details->{ ssnd_length };
+my $difference = $aiff_payload_len - $track_payload_len;
+if ( $difference != 0 ) {
+  my $word = ($difference > 0) ? "long" : "short";
+  my $abs = abs $difference;
+  print STDERR "Warning: AIFF file $aiff is $abs bytes too $word to replace track $track->{ number }.\n";
+}
+
+my $splice_length = ($aiff_payload_len < $track_payload_len) ? $aiff_payload_len : $track_payload_len;
+
+substr $iso_contents, 2048 * $track->{ offset } + $cd24_details->{ ssnd_payload_offset },
+  $splice_length,
+  (substr $aiff_contents, $aiff_details->{ ssnd_payload_offset }, $splice_length);
 
 close AIFF or die;
 close ISO or die;
@@ -91,4 +100,92 @@ sub parse_iso {
   }
 
   return @tracks;
+}
+
+sub parse_aiff_form {
+  my ( $chunk ) = @_;
+
+  my $struct = { id => (substr $chunk, 0, 4),
+		 size => (unpack "N", (substr $chunk, 4, 4)),
+		 type => (substr $chunk, 8, 4),
+		 offset => 12 };
+
+  return $struct;
+}
+
+sub parse_aiff_chunk {
+  my ( $chunk ) = @_;
+
+  my $struct = { id => (substr $chunk, 0, 4),
+		 size => (unpack "N", (substr $chunk, 4, 4)),
+		 offset => 8 };
+
+  return $struct;
+}
+
+sub parse_comm_payload {
+  my ( $chunk ) = @_;
+  my $struct = { numChannels => (unpack "n", (substr $chunk, 0, 2)),
+		 numSampleFrames => (unpack "N", (substr $chunk, 2, 4)),
+		 sampleSize => (unpack "n", (substr $chunk, 6, 2)),
+		 sampleRate => (substr $chunk, 8, 10) };
+  return $struct;
+}
+
+sub parse_ssnd_payload {
+  my ( $chunk ) = @_;
+  return { offset => (unpack "N", (substr $chunk, 0, 4)),
+	   blockSize => (unpack "N", (substr $chunk, 4, 4)) };
+}
+
+sub parse_aiff {
+  my ( $s ) = @_;
+
+  my $sane_96000 = "\x40\x0f\xbb\x80\x00\x00\x00\x00\x00\x00";
+
+  my $offset = 0;
+
+  my ( $found_comm, $found_ssnd ) = ( 0, 0 );
+  my $ret;
+
+  my $form = parse_aiff_form( substr $s, $offset );
+  die unless $form->{ id } eq "FORM" and $form->{ type } eq "AIFF";
+  $offset += $form->{ offset };
+
+  die unless ( $form->{ size } + 8 <= length $s );
+
+  while ( $offset < $form->{ size } + 8 ) {
+    my $aiff = parse_aiff_chunk( substr $s, $offset );
+
+    if ( $aiff->{ id } eq "COMM" ) {
+      my $x = parse_comm_payload( substr $s, $offset + $aiff->{ offset } );
+
+      die unless $x->{ numChannels } == 2;
+      die unless $x->{ sampleSize } == 24;
+      die unless $x->{ sampleRate } eq $sane_96000;
+
+      $ret->{ comm_length } = $x->{ numSampleFrames } * 2 * 3;
+      $found_comm = 1;
+    } elsif ( $aiff->{ id } eq "SSND" ) {
+      my $x = parse_ssnd_payload( substr $s, $offset + $aiff->{ offset } );
+
+      die unless $x->{ offset } == 0;
+      die unless $x->{ blockSize } == 0;
+
+      $ret->{ ssnd_length } = $aiff->{ size };
+      $ret->{ ssnd_payload_offset } = $offset + $aiff->{ offset }; # + 8 ???
+      $found_ssnd = 1;
+    } elsif ( $aiff->{ id } eq "ANNO" ) {
+    } else {
+      die "Unknown AIFF chunk $aiff->{ id }";
+    }
+
+    $offset += $aiff->{ offset } + $aiff->{ size };
+  }
+
+  die unless $found_comm and $found_ssnd;
+
+  die if ( $ret->{ ssnd_payload_offset } + $ret->{ ssnd_length } != length $s );
+
+  return $ret;
 }
